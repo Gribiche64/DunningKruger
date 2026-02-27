@@ -49,28 +49,24 @@ struct ContentView: View {
                             }
                         }
                     } label: {
-                        HStack(spacing: 4) {
-                            Text(themeManager.selectedThemeID.emoji)
-                                .font(.system(size: 14))
-                            Image(systemName: "paintbrush.pointed.fill")
-                                .font(.system(size: 12, weight: .bold))
-                                .foregroundStyle(theme.curveColor)
-                            Image(systemName: "chevron.down")
-                                .font(.system(size: 8, weight: .bold))
-                                .foregroundStyle(theme.axisLabelColor)
-                        }
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 6)
-                        .background(theme.chipBgColor)
-                        .overlay(
-                            Group {
-                                if theme.squareBorders {
-                                    Rectangle().stroke(theme.inputBorderColor, lineWidth: theme.borderWidth)
-                                } else {
-                                    RoundedRectangle(cornerRadius: 4).stroke(theme.inputBorderColor, lineWidth: theme.borderWidth)
+                        Text(theme.bracketButtons
+                             ? "[\(themeManager.selectedThemeID.emoji) SKIN \u{25BE}]"
+                             : "\(themeManager.selectedThemeID.emoji) Skin \u{25BE}")
+                            .font(theme.font(size: 12, weight: .heavy))
+                            .foregroundStyle(theme.axisLabelColor)
+                            .shadow(color: theme.axisLabelColor.opacity(0.5), radius: theme.tagGlowRadius > 0 ? 3 : 0)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(theme.chipBgColor)
+                            .overlay(
+                                Group {
+                                    if theme.squareBorders {
+                                        Rectangle().stroke(theme.inputBorderColor, lineWidth: theme.borderWidth)
+                                    } else {
+                                        RoundedRectangle(cornerRadius: 4).stroke(theme.inputBorderColor, lineWidth: theme.borderWidth)
+                                    }
                                 }
-                            }
-                        )
+                            )
                     }
                 }
                 .padding(.horizontal)
