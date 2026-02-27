@@ -105,8 +105,34 @@ struct DKCurveSampler {
     }
 
     /// Snap a position: keep user's X, replace Y with the curve's Y at that X.
+    /// Used for initial placement where we only have an X value.
     func snap(_ position: CGPoint) -> CGPoint {
         let clampedX = min(max(position.x, 0), 1)
         return CGPoint(x: clampedX, y: curveY(atX: clampedX))
+    }
+
+    /// Find the nearest point on the curve to a target position (shortest distance).
+    /// `aspectRatio` is drawableWidth / drawableHeight so pixel distances are correct.
+    func nearestPoint(to target: CGPoint, aspectRatio: CGFloat = 1.0) -> CGPoint {
+        let tx = min(max(target.x, 0), 1)
+        let ty = min(max(target.y, 0), 1)
+
+        var bestX: CGFloat = table[0].x
+        var bestY: CGFloat = table[0].y
+        var bestDist = CGFloat.infinity
+
+        for entry in table {
+            // Weight X by aspect ratio so distance is proportional to pixels
+            let dx = (entry.x - tx) * aspectRatio
+            let dy = entry.y - ty
+            let dist = dx * dx + dy * dy
+            if dist < bestDist {
+                bestDist = dist
+                bestX = entry.x
+                bestY = entry.y
+            }
+        }
+
+        return CGPoint(x: bestX, y: bestY)
     }
 }

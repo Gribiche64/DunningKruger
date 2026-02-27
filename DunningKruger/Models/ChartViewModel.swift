@@ -32,11 +32,10 @@ class ChartViewModel: ObservableObject {
         resolveOverlaps()
     }
 
-    func updatePosition(for personID: UUID, to newPosition: CGPoint) {
+    func updatePosition(for personID: UUID, to newPosition: CGPoint, aspectRatio: CGFloat = 1.0) {
         guard let index = people.firstIndex(where: { $0.id == personID }) else { return }
-        // Only keep X from the drag, snap Y to curve
-        let clampedX = min(max(newPosition.x, 0), 1)
-        people[index].position = sampler.snap(CGPoint(x: clampedX, y: 0))
+        // Find the closest point on the curve (shortest pixel distance)
+        people[index].position = sampler.nearestPoint(to: newPosition, aspectRatio: aspectRatio)
         resolveOverlaps()
     }
 

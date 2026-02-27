@@ -5,11 +5,11 @@ struct TagLayoutEngine {
 
     /// Estimated tag width in normalized coordinates per character
     /// (rough approximation — pixel font ~4px per char, chart ~700px drawable)
-    private static let charWidthNorm: CGFloat = 0.008
+    private static let charWidthNorm: CGFloat = 0.009
     /// Minimum vertical offset from the curve (normalized)
-    private static let baseOffset: CGFloat = 0.08
+    private static let baseOffset: CGFloat = 0.10
     /// Extra push if still overlapping (normalized)
-    private static let pushStep: CGFloat = 0.04
+    private static let pushStep: CGFloat = 0.05
 
     struct TagRect {
         let index: Int
@@ -33,9 +33,10 @@ struct TagLayoutEngine {
     ) -> [CGFloat] {
         guard !tags.isEmpty else { return [] }
 
-        // Build rects
+        // Build rects (cap name length to match NameTagView truncation)
         var rects: [TagRect] = tags.map { tag in
-            let hw = CGFloat(tag.nameLength) * charWidthNorm / 2 + 0.01
+            let cappedLen = min(tag.nameLength, 12)
+            let hw = CGFloat(cappedLen) * charWidthNorm / 2 + 0.01
             let hh: CGFloat = 0.03  // approx tag height in normalized coords
             return TagRect(
                 index: tag.index,

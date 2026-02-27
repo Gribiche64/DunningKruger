@@ -114,6 +114,14 @@ struct NameTagView: View {
     let color: Color
     let theme: ChartTheme
 
+    private static let maxDisplayChars = 12
+
+    private var displayName: String {
+        let upper = name.uppercased()
+        if upper.count <= Self.maxDisplayChars { return upper }
+        return String(upper.prefix(Self.maxDisplayChars - 1)) + "…"
+    }
+
     var body: some View {
         if theme.usePixelFont {
             pixelNameTag
@@ -124,7 +132,7 @@ struct NameTagView: View {
 
     // -- Pixel-font name tag (8-Bit theme) --
     private var pixelNameTag: some View {
-        let nameGrid = PixelFont.render(name)
+        let nameGrid = PixelFont.render(displayName)
         let pixelSize = theme.pixelFontSize
         let textW = CGFloat(nameGrid.first?.count ?? 1) * pixelSize + 8
         let textH = CGFloat(nameGrid.count) * pixelSize + 6
@@ -143,9 +151,10 @@ struct NameTagView: View {
 
     // -- System-font name tag (Victorian, Chalkboard, Corporate) --
     private var systemNameTag: some View {
-        Text(name.uppercased())
+        Text(displayName)
             .font(theme.font(size: 10, weight: .bold))
             .foregroundStyle(color)
+            .lineLimit(1)
             .padding(.horizontal, 6)
             .padding(.vertical, 3)
             .background(
@@ -176,6 +185,26 @@ struct AnyShape: Shape, @unchecked Sendable {
     }
 }
 
+// MARK: - Tag Width Estimation
+
+/// Estimate the pixel half-width of a name tag so we can clamp it within chart bounds.
+private func estimatedTagHalfWidth(name: String, theme: ChartTheme) -> CGFloat {
+    let maxChars = 12
+    let displayLen = min(name.count, maxChars)
+    if theme.usePixelFont {
+        let pixelSize = theme.pixelFontSize
+        // PixelFont.render: cols = charCount * (3 + 1) - 1  (3px char + 1px gap)
+        // Tag frame width = cols * pixelSize + 8 (padding)
+        // Then add generous margin for border stroke + glow shadow bleed
+        let cols = CGFloat(displayLen) * 4.0
+        let frameW = cols * pixelSize + 8.0
+        return frameW / 2.0 + 12.0
+    } else {
+        // System font at size 10: ~6.5px per char + 12px horizontal padding + border/shadow
+        return CGFloat(displayLen) * 6.5 / 2.0 + 14.0
+    }
+}
+
 // MARK: - Person Marker View (Interactive)
 
 struct PersonMarkerView: View {
@@ -184,7 +213,7 @@ struct PersonMarkerView: View {
     let chartSize: CGSize
     let chartPadding: CGFloat
     let theme: ChartTheme
-    let onPositionChange: (CGPoint) -> Void
+    let onPositionChange: (CGPoint, CGFloat) -> Void  // (normalized position, aspect ratio)
 
     @State private var dragOffset: CGSize = .zero
     @State private var isDragging = false
@@ -204,10 +233,15 @@ struct PersonMarkerView: View {
         )
     }
 
-    /// Pixel position of the name tag (offset from curve)
+    /// Pixel position of the name tag (offset from curve), clamped to stay inside chart
     private var tagPosition: CGPoint {
-        CGPoint(
-            x: snapPosition.x,
+        let rawX = snapPosition.x
+        let halfW = estimatedTagHalfWidth(name: person.name, theme: theme)
+        let minX = chartPadding + halfW
+        let maxX = chartSize.width - chartPadding - halfW
+        let clampedX = max(minX, min(rawX, maxX))
+        return CGPoint(
+            x: clampedX,
             y: snapPosition.y - person.tagOffset * drawableSize.height
         )
     }
@@ -231,34 +265,39 @@ struct PersonMarkerView: View {
         person.color(in: theme)
     }
 
+    /// Where to render the name tag — follows finger during drag, offset position otherwise
+    private var nameTagPosition: CGPoint {
+        isDragging ? dotDisplayPosition : tagDisplayPosition
+    }
+
     var body: some View {
         ZStack {
-            // Snap dot on the curve
-            Circle()
-                .fill(markerColor)
-                .frame(width: 8, height: 8)
-                .shadow(color: markerColor.opacity(theme.tagGlowRadius > 0 ? 0.6 : 0.3), radius: 3)
-                .position(dotDisplayPosition)
-
             // Leader line from snap dot to tag (if offset and not dragging)
             if abs(person.tagOffset) > 0.01 && !isDragging {
                 Path { path in
-                    path.move(to: dotDisplayPosition)
+                    path.move(to: snapPosition)
                     path.addLine(to: tagDisplayPosition)
                 }
                 .stroke(
-                    markerColor.opacity(0.5),
-                    style: StrokeStyle(lineWidth: 1, dash: [3, 2])
+                    markerColor.opacity(0.6),
+                    style: StrokeStyle(lineWidth: 1.5, dash: [4, 3])
                 )
             }
 
-            // Name tag
+            // Snap dot on the curve
+            Circle()
+                .fill(markerColor)
+                .frame(width: 10, height: 10)
+                .shadow(color: markerColor.opacity(theme.tagGlowRadius > 0 ? 0.7 : 0.4), radius: 4)
+                .position(dotDisplayPosition)
+
+            // Name tag — offset from dot when not dragging, follows finger when dragging
             NameTagView(
                 name: person.name,
                 color: markerColor,
                 theme: theme
             )
-            .position(dotDisplayPosition) // tag follows dot during drag
+            .position(nameTagPosition)
         }
         .animation(.spring(response: 0.35, dampingFraction: 0.7), value: person.position.x)
         .animation(.spring(response: 0.35, dampingFraction: 0.7), value: person.position.y)
@@ -281,8 +320,9 @@ struct PersonMarkerView: View {
                     dragOffset = .zero
                     isDragging = false
 
-                    // VM will clamp X and snap Y to the curve
-                    onPositionChange(CGPoint(x: normX, y: normY))
+                    // Find nearest curve point (shortest pixel distance)
+                    let aspect = drawableSize.width / max(drawableSize.height, 1)
+                    onPositionChange(CGPoint(x: normX, y: normY), aspect)
                 }
         )
     }
@@ -309,28 +349,33 @@ struct StaticMarkerView: View {
     }
 
     private var tagPos: CGPoint {
-        CGPoint(
-            x: snapPos.x,
+        let rawX = snapPos.x
+        let halfW = estimatedTagHalfWidth(name: person.name, theme: theme)
+        let minX = chartPadding + halfW
+        let maxX = chartPadding + drawW - halfW
+        let clampedX = max(minX, min(rawX, maxX))
+        return CGPoint(
+            x: clampedX,
             y: snapPos.y - person.tagOffset * drawH
         )
     }
 
     var body: some View {
         ZStack {
-            // Snap dot
-            Circle()
-                .fill(markerColor)
-                .frame(width: 8, height: 8)
-                .position(snapPos)
-
             // Leader line
             if abs(person.tagOffset) > 0.01 {
                 Path { path in
                     path.move(to: snapPos)
                     path.addLine(to: tagPos)
                 }
-                .stroke(markerColor.opacity(0.5), style: StrokeStyle(lineWidth: 1, dash: [3, 2]))
+                .stroke(markerColor.opacity(0.6), style: StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
             }
+
+            // Snap dot
+            Circle()
+                .fill(markerColor)
+                .frame(width: 10, height: 10)
+                .position(snapPos)
 
             // Name tag
             NameTagView(

@@ -72,8 +72,8 @@ struct ChartView: View {
                         chartSize: size,
                         chartPadding: chartPadding,
                         theme: theme
-                    ) { newPosition in
-                        viewModel.updatePosition(for: person.id, to: newPosition)
+                    ) { newPosition, aspectRatio in
+                        viewModel.updatePosition(for: person.id, to: newPosition, aspectRatio: aspectRatio)
                     }
                 }
             }
@@ -95,7 +95,7 @@ struct ChartView: View {
 
     private func phaseLabel(_ text: String, x: CGFloat, y: CGFloat) -> some View {
         Text(text)
-            .font(theme.font(size: 11, weight: .bold))
+            .font(theme.font(size: 13, weight: .bold))
             .multilineTextAlignment(.center)
             .foregroundStyle(theme.phaseLabelColor)
             .shadow(color: theme.backgroundColor, radius: 4)
@@ -106,16 +106,16 @@ struct ChartView: View {
     @ViewBuilder
     private func axisLabels(in size: CGSize) -> some View {
         Text("EXPERIENCE / KNOWLEDGE -->")
-            .font(theme.font(size: 9, weight: .bold))
+            .font(theme.font(size: 11, weight: .bold))
             .foregroundStyle(theme.axisLabelColor)
-            .position(x: size.width / 2, y: size.height - 10)
+            .position(x: size.width / 2, y: size.height - 12)
 
         Text("CONFIDENCE -->")
-            .font(theme.font(size: 9, weight: .bold))
+            .font(theme.font(size: 11, weight: .bold))
             .foregroundStyle(theme.axisLabelColor)
             .rotationEffect(.degrees(-90))
             .fixedSize()
-            .position(x: 14, y: size.height / 2)
+            .position(x: 16, y: size.height / 2)
     }
 }
 
@@ -164,28 +164,28 @@ struct StaticChartView: View {
 
                 // Phase labels
                 Text("MT. STUPID")
-                    .font(theme.font(size: 11, weight: .bold))
+                    .font(theme.font(size: 13, weight: .bold))
                     .multilineTextAlignment(.center).foregroundStyle(theme.phaseLabelColor)
                     .shadow(color: theme.backgroundColor, radius: 4)
                     .shadow(color: theme.backgroundColor, radius: 8)
                     .position(x: chartPadding + 0.18 * drawW, y: chartPadding + 0.02 * drawH)
 
                 Text("VALLEY OF\nDESPAIR")
-                    .font(theme.font(size: 11, weight: .bold))
+                    .font(theme.font(size: 13, weight: .bold))
                     .multilineTextAlignment(.center).foregroundStyle(theme.phaseLabelColor)
                     .shadow(color: theme.backgroundColor, radius: 4)
                     .shadow(color: theme.backgroundColor, radius: 8)
                     .position(x: chartPadding + 0.40 * drawW, y: chartPadding + 0.97 * drawH)
 
                 Text("SLOPE OF\nENLIGHTENMENT")
-                    .font(theme.font(size: 11, weight: .bold))
+                    .font(theme.font(size: 13, weight: .bold))
                     .multilineTextAlignment(.center).foregroundStyle(theme.phaseLabelColor)
                     .shadow(color: theme.backgroundColor, radius: 4)
                     .shadow(color: theme.backgroundColor, radius: 8)
                     .position(x: chartPadding + 0.62 * drawW, y: chartPadding + 0.50 * drawH)
 
                 Text("PLATEAU OF\nSUSTAINABILITY")
-                    .font(theme.font(size: 11, weight: .bold))
+                    .font(theme.font(size: 13, weight: .bold))
                     .multilineTextAlignment(.center).foregroundStyle(theme.phaseLabelColor)
                     .shadow(color: theme.backgroundColor, radius: 4)
                     .shadow(color: theme.backgroundColor, radius: 8)
@@ -193,12 +193,12 @@ struct StaticChartView: View {
 
                 // Axis labels
                 Text("EXPERIENCE / KNOWLEDGE -->")
-                    .font(theme.font(size: 9, weight: .bold))
+                    .font(theme.font(size: 11, weight: .bold))
                     .foregroundStyle(theme.axisLabelColor)
                     .position(x: size.width / 2, y: size.height - 10)
 
                 Text("CONFIDENCE -->")
-                    .font(theme.font(size: 9, weight: .bold))
+                    .font(theme.font(size: 11, weight: .bold))
                     .foregroundStyle(theme.axisLabelColor)
                     .rotationEffect(.degrees(-90)).fixedSize()
                     .position(x: 14, y: size.height / 2)

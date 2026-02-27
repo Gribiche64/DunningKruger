@@ -55,6 +55,9 @@ struct ContentView: View {
                             Image(systemName: "paintbrush.pointed.fill")
                                 .font(.system(size: 12, weight: .bold))
                                 .foregroundStyle(theme.curveColor)
+                            Image(systemName: "chevron.down")
+                                .font(.system(size: 8, weight: .bold))
+                                .foregroundStyle(theme.axisLabelColor)
                         }
                         .padding(.horizontal, 8)
                         .padding(.vertical, 6)
@@ -80,7 +83,8 @@ struct ContentView: View {
                         .foregroundStyle(theme.curveColor)
 
                     TextField("ENTER NAME", text: $newName)
-                        .font(theme.font(size: 14, weight: .medium))
+                        .textFieldStyle(.plain)
+                        .font(theme.font(size: 16, weight: .semibold))
                         .foregroundStyle(theme.titleColor)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 6)
@@ -132,7 +136,7 @@ struct ContentView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .padding(.horizontal, 8)
 
-                // Bottom bar
+                // Bottom bar — fixed height so chart doesn't resize when chips appear
                 HStack {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 6) {
@@ -147,10 +151,10 @@ struct ContentView: View {
 
                     Spacer()
 
-                    if !viewModel.people.isEmpty {
-                        ShareButton(viewModel: viewModel, theme: theme)
-                    }
+                    ShareButton(viewModel: viewModel, theme: theme)
+                        .opacity(viewModel.people.isEmpty ? 0 : 1)
                 }
+                .frame(height: 32)
                 .padding(.horizontal)
                 .padding(.bottom, 8)
             }
@@ -276,21 +280,26 @@ struct ShareButton: View {
         guard let cgImage = renderer.cgImage else { return }
         let nsImage = NSImage(cgImage: cgImage, size: NSSize(width: cgImage.width / 2, height: cgImage.height / 2))
 
-        let pb = NSPasteboard.general
-        pb.clearContents()
-        pb.writeObjects([nsImage])
-
-        let panel = NSSavePanel()
-        panel.allowedContentTypes = [.png]
-        panel.nameFieldStringValue = "Kreugerizer5000.png"
-        panel.begin { response in
-            if response == .OK, let url = panel.url {
-                let rep = NSBitmapImageRep(cgImage: cgImage)
-                if let data = rep.representation(using: .png, properties: [:]) {
-                    try? data.write(to: url)
-                }
-            }
+        // Write a temp PNG file so share sheet services (Messages, Mail, AirDrop) get a real file
+        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("Kreugerizer5000.png")
+        let rep = NSBitmapImageRep(cgImage: cgImage)
+        if let data = rep.representation(using: .png, properties: [:]) {
+            try? data.write(to: tempURL)
         }
+
+        // Show native macOS share picker (AirDrop, Messages, Mail, Save, etc.)
+        guard let window = NSApplication.shared.keyWindow,
+              let contentView = window.contentView else { return }
+
+        let picker = NSSharingServicePicker(items: [nsImage, tempURL])
+        // Anchor the picker to the bottom-right area where the share button is
+        let buttonRect = CGRect(
+            x: contentView.bounds.maxX - 100,
+            y: 10,
+            width: 1,
+            height: 1
+        )
+        picker.show(relativeTo: buttonRect, of: contentView, preferredEdge: .maxY)
         #endif
     }
 }
