@@ -60,9 +60,52 @@ class ChartViewModel: ObservableObject {
         return "the Plateau of Sustainability"
     }
 
+    /// Generates a position-aware quip. The curve is sliced into ~10 sub-zones
+    /// so the message reflects *where* in each phase someone sits.
+    private static func toastText(name: String, x: CGFloat) -> String {
+        switch x {
+        // ── Mt. Stupid ──
+        case ..<0.08:
+            return "\(name) just learned what a keyboard is"
+        case ..<0.13:
+            return "\(name) is scaling Mt. Stupid"
+        case ..<0.18:
+            return "\(name) is approaching the peak of Mt. Stupid"
+        case ..<0.25:
+            return "\(name) has mass confidence, zero knowledge"
+
+        // ── Valley of Despair ──
+        case ..<0.30:
+            return "\(name) is starting to have doubts"
+        case ..<0.37:
+            return "\(name) is tumbling into the Valley of Despair"
+        case ..<0.44:
+            return "\(name) has hit rock bottom. It can only get better"
+        case ..<0.48:
+            return "\(name) is crawling out of the Valley of Despair"
+
+        // ── Slope of Enlightenment ──
+        case ..<0.55:
+            return "\(name) is finding the Slope of Enlightenment"
+        case ..<0.63:
+            return "\(name) is grinding up the Slope of Enlightenment"
+        case ..<0.72:
+            return "\(name) is actually starting to know things"
+        case ..<0.78:
+            return "\(name) is approaching the Plateau of Sustainability"
+
+        // ── Plateau of Sustainability ──
+        case ..<0.85:
+            return "\(name) has reached the Plateau of Sustainability"
+        case ..<0.92:
+            return "\(name) genuinely knows what they're doing"
+        default:
+            return "\(name) has achieved mass enlightenment"
+        }
+    }
+
     private func showZoneToast(name: String, x: CGFloat) {
-        let zone = Self.zoneName(forX: x)
-        toastMessage = "\(name) has reached \(zone)!"
+        toastMessage = Self.toastText(name: name, x: x)
         toastCounter += 1
         let currentCount = toastCounter
         Task {
