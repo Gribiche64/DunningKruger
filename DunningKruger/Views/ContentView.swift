@@ -135,6 +135,37 @@ struct ContentView: View {
                 ChartView(viewModel: viewModel)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .padding(.horizontal, 8)
+                    .overlay(alignment: .bottom) {
+                        if let toast = viewModel.toastMessage {
+                            Text(toast)
+                                .font(theme.font(size: 12, weight: .bold))
+                                .foregroundStyle(theme.titleColor)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
+                                .background(
+                                    Group {
+                                        if theme.squareBorders {
+                                            Rectangle().fill(theme.chipBgColor.opacity(0.95))
+                                        } else {
+                                            RoundedRectangle(cornerRadius: 6).fill(theme.chipBgColor.opacity(0.95))
+                                        }
+                                    }
+                                )
+                                .overlay(
+                                    Group {
+                                        if theme.squareBorders {
+                                            Rectangle().stroke(theme.inputBorderColor, lineWidth: theme.borderWidth)
+                                        } else {
+                                            RoundedRectangle(cornerRadius: 6).stroke(theme.inputBorderColor, lineWidth: theme.borderWidth)
+                                        }
+                                    }
+                                )
+                                .shadow(color: theme.backgroundColor.opacity(0.5), radius: 8)
+                                .padding(.bottom, 16)
+                                .transition(.move(edge: .bottom).combined(with: .opacity))
+                        }
+                    }
+                    .animation(.easeInOut(duration: 0.3), value: viewModel.toastMessage)
 
                 // Bottom bar — fixed height so chart doesn't resize when chips appear
                 HStack {
@@ -142,7 +173,9 @@ struct ContentView: View {
                         HStack(spacing: 6) {
                             ForEach(viewModel.people) { person in
                                 PersonChip(person: person, theme: theme) {
-                                    viewModel.removePerson(person)
+                                    withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
+                                        viewModel.removePerson(person)
+                                    }
                                 }
                             }
                         }
@@ -151,8 +184,37 @@ struct ContentView: View {
 
                     Spacer()
 
-                    ShareButton(viewModel: viewModel, theme: theme)
-                        .opacity(viewModel.people.isEmpty ? 0 : 1)
+                    if !viewModel.people.isEmpty {
+                        // Shuffle / randomize all
+                        Button {
+                            withAnimation(.spring(response: 0.5, dampingFraction: 0.6)) {
+                                viewModel.randomizeAll()
+                            }
+                        } label: {
+                            Text(theme.bracketButtons ? "[\u{1F3B2}]" : "\u{1F3B2}")
+                                .font(theme.font(size: 12, weight: .heavy))
+                                .foregroundStyle(theme.axisLabelColor)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 6)
+                                .background(theme.chipBgColor)
+                                .overlay(
+                                    Group {
+                                        if theme.squareBorders {
+                                            Rectangle().stroke(theme.inputBorderColor, lineWidth: theme.borderWidth)
+                                        } else {
+                                            RoundedRectangle(cornerRadius: 4).stroke(theme.inputBorderColor, lineWidth: theme.borderWidth)
+                                        }
+                                    }
+                                )
+                        }
+                        .buttonStyle(.plain)
+
+                        #if os(macOS)
+                        CopyButton(viewModel: viewModel, theme: theme)
+                        #endif
+
+                        ShareButton(viewModel: viewModel, theme: theme)
+                    }
                 }
                 .frame(height: 32)
                 .padding(.horizontal)
@@ -165,7 +227,9 @@ struct ContentView: View {
     }
 
     private func addPerson() {
-        viewModel.addPerson(named: newName)
+        withAnimation(.spring(response: 0.5, dampingFraction: 0.6)) {
+            viewModel.addPerson(named: newName)
+        }
         newName = ""
     }
 }
@@ -222,6 +286,65 @@ struct PersonChip: View {
         )
     }
 }
+
+// MARK: - Copy Button (macOS only, theme-aware)
+
+#if os(macOS)
+struct CopyButton: View {
+    @ObservedObject var viewModel: ChartViewModel
+    let theme: ChartTheme
+
+    @State private var copied = false
+
+    var body: some View {
+        Button {
+            copyToClipboard()
+        } label: {
+            Text(copied
+                 ? (theme.bracketButtons ? "[COPIED]" : "Copied!")
+                 : (theme.bracketButtons ? "[COPY]" : "Copy"))
+                .font(theme.font(size: 12, weight: .heavy))
+                .foregroundStyle(copied ? theme.buttonBgColor : theme.axisLabelColor)
+                .shadow(color: theme.axisLabelColor.opacity(0.5), radius: theme.tagGlowRadius > 0 ? 3 : 0)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(theme.chipBgColor)
+                .overlay(
+                    Group {
+                        if theme.squareBorders {
+                            Rectangle().stroke(theme.inputBorderColor, lineWidth: theme.borderWidth)
+                        } else {
+                            RoundedRectangle(cornerRadius: 4).stroke(theme.inputBorderColor, lineWidth: 1)
+                        }
+                    }
+                )
+        }
+        .buttonStyle(.plain)
+    }
+
+    @MainActor
+    private func copyToClipboard() {
+        let chartView = StaticChartView(people: viewModel.people, theme: theme)
+            .frame(width: 800, height: 500)
+
+        let renderer = ImageRenderer(content: chartView)
+        renderer.scale = 2.0
+
+        guard let cgImage = renderer.cgImage else { return }
+        let nsImage = NSImage(cgImage: cgImage, size: NSSize(width: cgImage.width / 2, height: cgImage.height / 2))
+
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.writeObjects([nsImage])
+
+        // Brief "Copied!" feedback
+        copied = true
+        Task {
+            try? await Task.sleep(nanoseconds: 1_500_000_000)
+            copied = false
+        }
+    }
+}
+#endif
 
 // MARK: - Share Button (theme-aware)
 

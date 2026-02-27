@@ -75,6 +75,7 @@ struct ChartView: View {
                     ) { newPosition, aspectRatio in
                         viewModel.updatePosition(for: person.id, to: newPosition, aspectRatio: aspectRatio)
                     }
+                    .transition(.scale(scale: 0.3).combined(with: .opacity))
                 }
             }
         }
@@ -125,6 +126,12 @@ struct StaticChartView: View {
     let people: [Person]
     let theme: ChartTheme
     private let chartPadding: CGFloat = 44
+
+    private var dateString: String {
+        let f = DateFormatter()
+        f.dateStyle = .medium
+        return f.string(from: Date())
+    }
 
     var body: some View {
         GeometryReader { geometry in
@@ -209,6 +216,12 @@ struct StaticChartView: View {
                     .foregroundStyle(theme.titleColor)
                     .shadow(color: theme.titleColor.opacity(0.5), radius: 4)
                     .position(x: size.width / 2, y: 16)
+
+                // Date watermark
+                Text(dateString)
+                    .font(theme.font(size: 9, weight: .regular))
+                    .foregroundStyle(theme.axisLabelColor.opacity(0.5))
+                    .position(x: size.width - 60, y: size.height - 10)
 
                 // Static markers with snap dots + leader lines + name tags
                 ForEach(people) { person in

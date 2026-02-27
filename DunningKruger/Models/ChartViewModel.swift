@@ -3,9 +3,11 @@ import SwiftUI
 @MainActor
 class ChartViewModel: ObservableObject {
     @Published var people: [Person] = []
+    @Published var toastMessage: String? = nil
 
     private var nextColorIndex: Int = 0
     private let sampler = DKCurveSampler.shared
+    private var toastCounter = 0
 
     func addPerson(named name: String) {
         let trimmed = name.trimmingCharacters(in: .whitespaces)
@@ -25,6 +27,7 @@ class ChartViewModel: ObservableObject {
         )
         people.append(person)
         resolveOverlaps()
+        showZoneToast(name: trimmed, x: snapped.x)
     }
 
     func removePerson(_ person: Person) {
@@ -37,7 +40,40 @@ class ChartViewModel: ObservableObject {
         // Find the closest point on the curve (shortest pixel distance)
         people[index].position = sampler.nearestPoint(to: newPosition, aspectRatio: aspectRatio)
         resolveOverlaps()
+        showZoneToast(name: people[index].name, x: people[index].position.x)
     }
+
+    func randomizeAll() {
+        for i in people.indices {
+            let randomX = CGFloat.random(in: 0.1...0.9)
+            people[i].position = sampler.snap(CGPoint(x: randomX, y: 0))
+        }
+        resolveOverlaps()
+    }
+
+    // MARK: - Zone Detection & Toast
+
+    static func zoneName(forX x: CGFloat) -> String {
+        if x < 0.25 { return "Mt. Stupid" }
+        if x < 0.48 { return "the Valley of Despair" }
+        if x < 0.75 { return "the Slope of Enlightenment" }
+        return "the Plateau of Sustainability"
+    }
+
+    private func showZoneToast(name: String, x: CGFloat) {
+        let zone = Self.zoneName(forX: x)
+        toastMessage = "\(name) has reached \(zone)!"
+        toastCounter += 1
+        let currentCount = toastCounter
+        Task {
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
+            if toastCounter == currentCount {
+                toastMessage = nil
+            }
+        }
+    }
+
+    // MARK: - Tag Overlap Resolution
 
     private func resolveOverlaps() {
         guard !people.isEmpty else { return }

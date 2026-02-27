@@ -119,7 +119,7 @@ struct NameTagView: View {
     private var displayName: String {
         let upper = name.uppercased()
         if upper.count <= Self.maxDisplayChars { return upper }
-        return String(upper.prefix(Self.maxDisplayChars - 1)) + "…"
+        return String(upper.prefix(Self.maxDisplayChars - 2)) + ".."
     }
 
     var body: some View {
@@ -205,6 +205,14 @@ private func estimatedTagHalfWidth(name: String, theme: ChartTheme) -> CGFloat {
     }
 }
 
+// MARK: - Easter Egg Detection
+
+private func isEasterEggName(_ name: String) -> Bool {
+    let lower = name.lowercased()
+    return lower.contains("dunning") || lower.contains("kruger")
+        || lower.contains("krueger") || lower.contains("kreuger")
+}
+
 // MARK: - Person Marker View (Interactive)
 
 struct PersonMarkerView: View {
@@ -217,6 +225,8 @@ struct PersonMarkerView: View {
 
     @State private var dragOffset: CGSize = .zero
     @State private var isDragging = false
+
+    private var isEasterEgg: Bool { isEasterEggName(person.name) }
 
     private var drawableSize: CGSize {
         CGSize(
@@ -298,6 +308,16 @@ struct PersonMarkerView: View {
                 theme: theme
             )
             .position(nameTagPosition)
+
+            // Easter egg crown for Dunning/Kruger names
+            if isEasterEgg {
+                Text("\u{1F451}")
+                    .font(.system(size: 14))
+                    .position(
+                        x: nameTagPosition.x,
+                        y: nameTagPosition.y - 16
+                    )
+            }
         }
         .animation(.spring(response: 0.35, dampingFraction: 0.7), value: person.position.x)
         .animation(.spring(response: 0.35, dampingFraction: 0.7), value: person.position.y)
@@ -340,6 +360,8 @@ struct StaticMarkerView: View {
     private var markerColor: Color {
         person.color(in: theme)
     }
+
+    private var isEasterEgg: Bool { isEasterEggName(person.name) }
 
     private var snapPos: CGPoint {
         CGPoint(
@@ -384,6 +406,13 @@ struct StaticMarkerView: View {
                 theme: theme
             )
             .position(tagPos)
+
+            // Easter egg crown
+            if isEasterEgg {
+                Text("\u{1F451}")
+                    .font(.system(size: 14))
+                    .position(x: tagPos.x, y: tagPos.y - 16)
+            }
         }
     }
 }
