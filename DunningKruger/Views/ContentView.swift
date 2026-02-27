@@ -52,22 +52,23 @@ struct ContentView: View {
                         Text(theme.bracketButtons
                              ? "[\(themeManager.selectedThemeID.emoji) SKIN \u{25BE}]"
                              : "\(themeManager.selectedThemeID.emoji) Skin \u{25BE}")
-                            .font(theme.font(size: 14, weight: .heavy))
-                            .foregroundStyle(theme.curveColor)
-                            .shadow(color: theme.curveColor.opacity(0.6), radius: theme.tagGlowRadius > 0 ? 4 : 0)
+                            .font(theme.font(size: 16, weight: .heavy))
+                            .foregroundColor(theme.titleColor)
+                            .shadow(color: theme.titleColor.opacity(0.7), radius: theme.tagGlowRadius > 0 ? 6 : 0)
                             .padding(.horizontal, 12)
                             .padding(.vertical, 6)
                             .background(theme.chipBgColor)
                             .overlay(
                                 Group {
                                     if theme.squareBorders {
-                                        Rectangle().stroke(theme.curveColor.opacity(0.5), lineWidth: theme.borderWidth)
+                                        Rectangle().stroke(theme.titleColor.opacity(0.5), lineWidth: theme.borderWidth)
                                     } else {
                                         RoundedRectangle(cornerRadius: 4).stroke(theme.inputBorderColor, lineWidth: theme.borderWidth)
                                     }
                                 }
                             )
                     }
+                    .tint(theme.titleColor)
                 }
                 .padding(.horizontal)
                 .padding(.top, 10)
