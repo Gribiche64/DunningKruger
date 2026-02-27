@@ -60,47 +60,42 @@ class ChartViewModel: ObservableObject {
         return "the Plateau of Sustainability"
     }
 
-    /// Generates a position-aware quip. The curve is sliced into ~10 sub-zones
-    /// so the message reflects *where* in each phase someone sits.
+    /// Position-aware message grounded in the DK curve place names.
     private static func toastText(name: String, x: CGFloat) -> String {
         switch x {
         // ── Mt. Stupid ──
         case ..<0.08:
-            return "\(name) just learned what a keyboard is"
-        case ..<0.13:
+            return "\(name) is at the base of Mt. Stupid"
+        case ..<0.15:
             return "\(name) is scaling Mt. Stupid"
-        case ..<0.18:
+        case ..<0.20:
             return "\(name) is approaching the peak of Mt. Stupid"
         case ..<0.25:
-            return "\(name) has mass confidence, zero knowledge"
+            return "\(name) is at the peak of Mt. Stupid"
 
         // ── Valley of Despair ──
         case ..<0.30:
-            return "\(name) is starting to have doubts"
+            return "\(name) is descending into the Valley of Despair"
         case ..<0.37:
-            return "\(name) is tumbling into the Valley of Despair"
+            return "\(name) is deep in the Valley of Despair"
         case ..<0.44:
-            return "\(name) has hit rock bottom. It can only get better"
+            return "\(name) is at the bottom of the Valley of Despair"
         case ..<0.48:
-            return "\(name) is crawling out of the Valley of Despair"
+            return "\(name) is climbing out of the Valley of Despair"
 
         // ── Slope of Enlightenment ──
         case ..<0.55:
-            return "\(name) is finding the Slope of Enlightenment"
-        case ..<0.63:
-            return "\(name) is grinding up the Slope of Enlightenment"
-        case ..<0.72:
-            return "\(name) is actually starting to know things"
-        case ..<0.78:
-            return "\(name) is approaching the Plateau of Sustainability"
+            return "\(name) has found the Slope of Enlightenment"
+        case ..<0.65:
+            return "\(name) is halfway up the Slope of Enlightenment"
+        case ..<0.75:
+            return "\(name) is nearing the top of the Slope of Enlightenment"
 
         // ── Plateau of Sustainability ──
         case ..<0.85:
             return "\(name) has reached the Plateau of Sustainability"
-        case ..<0.92:
-            return "\(name) genuinely knows what they're doing"
         default:
-            return "\(name) has achieved mass enlightenment"
+            return "\(name) is well into the Plateau of Sustainability"
         }
     }
 
