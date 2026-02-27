@@ -3,13 +3,28 @@ import SwiftUI
 struct ChartView: View {
     @ObservedObject var viewModel: ChartViewModel
     @EnvironmentObject var themeManager: ThemeManager
-    private let chartPadding: CGFloat = 44
 
     private var theme: ChartTheme { themeManager.theme }
+
+    /// Responsive chart padding — smaller on compact screens
+    private func chartPad(for size: CGSize) -> CGFloat {
+        size.width < 500 ? 28 : 44
+    }
+
+    /// Responsive font size for phase labels
+    private func phaseFontSize(for size: CGSize) -> CGFloat {
+        size.width < 400 ? 9 : size.width < 600 ? 11 : 13
+    }
+
+    /// Responsive font size for axis labels
+    private func axisFontSize(for size: CGSize) -> CGFloat {
+        size.width < 400 ? 8 : size.width < 600 ? 10 : 11
+    }
 
     var body: some View {
         GeometryReader { geometry in
             let size = geometry.size
+            let padding = chartPad(for: size)
 
             ZStack {
                 // Background
@@ -31,7 +46,7 @@ struct ChartView: View {
                 // Grid
                 RetroGridLines()
                     .stroke(theme.gridLineColor, lineWidth: 0.5)
-                    .padding(chartPadding)
+                    .padding(padding)
 
                 // Curve glow layer (if theme has glow)
                 if let glowColor = theme.curveGlowColor {
@@ -41,7 +56,7 @@ struct ChartView: View {
                             style: StrokeStyle(lineWidth: theme.curveGlowWidth, lineCap: .round, lineJoin: .round)
                         )
                         .blur(radius: theme.curveGlowBlur)
-                        .padding(chartPadding)
+                        .padding(padding)
                 }
 
                 // Curve main line
@@ -50,13 +65,13 @@ struct ChartView: View {
                         theme.curveColor,
                         style: StrokeStyle(lineWidth: theme.curveLineWidth, lineCap: .round, lineJoin: .round)
                     )
-                    .padding(chartPadding)
+                    .padding(padding)
 
                 // Phase labels
-                phaseLabels(in: size)
+                phaseLabels(in: size, padding: padding)
 
                 // Axis labels
-                axisLabels(in: size)
+                axisLabels(in: size, padding: padding)
 
                 // Overlay (CRT scanlines, etc.)
                 if theme.overlay == .crtScanlines {
@@ -70,7 +85,7 @@ struct ChartView: View {
                         person: person,
                         index: index,
                         chartSize: size,
-                        chartPadding: chartPadding,
+                        chartPadding: padding,
                         theme: theme
                     ) { newPosition, aspectRatio in
                         viewModel.updatePosition(for: person.id, to: newPosition, aspectRatio: aspectRatio)
@@ -78,25 +93,31 @@ struct ChartView: View {
                     .transition(.scale(scale: 0.3).combined(with: .opacity))
                 }
             }
+            #if os(iOS)
+            .onTapGesture {
+                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+            }
+            #endif
         }
     }
 
     @ViewBuilder
-    private func phaseLabels(in size: CGSize) -> some View {
-        let drawW = size.width - chartPadding * 2
-        let drawH = size.height - chartPadding * 2
+    private func phaseLabels(in size: CGSize, padding: CGFloat) -> some View {
+        let drawW = size.width - padding * 2
+        let drawH = size.height - padding * 2
+        let fontSize = phaseFontSize(for: size)
 
         ZStack {
-            phaseLabel("MT. STUPID", x: chartPadding + 0.18 * drawW, y: chartPadding + 0.02 * drawH)
-            phaseLabel("VALLEY OF\nDESPAIR", x: chartPadding + 0.40 * drawW, y: chartPadding + 0.97 * drawH)
-            phaseLabel("SLOPE OF\nENLIGHTENMENT", x: chartPadding + 0.62 * drawW, y: chartPadding + 0.50 * drawH)
-            phaseLabel("PLATEAU OF\nSUSTAINABILITY", x: chartPadding + 0.88 * drawW, y: chartPadding + 0.10 * drawH)
+            phaseLabel("MT. STUPID", fontSize: fontSize, x: padding + 0.18 * drawW, y: padding + 0.02 * drawH)
+            phaseLabel("VALLEY OF\nDESPAIR", fontSize: fontSize, x: padding + 0.40 * drawW, y: padding + 0.97 * drawH)
+            phaseLabel("SLOPE OF\nENLIGHTENMENT", fontSize: fontSize, x: padding + 0.62 * drawW, y: padding + 0.50 * drawH)
+            phaseLabel("PLATEAU OF\nSUSTAINABILITY", fontSize: fontSize, x: padding + 0.88 * drawW, y: padding + 0.10 * drawH)
         }
     }
 
-    private func phaseLabel(_ text: String, x: CGFloat, y: CGFloat) -> some View {
+    private func phaseLabel(_ text: String, fontSize: CGFloat, x: CGFloat, y: CGFloat) -> some View {
         Text(text)
-            .font(theme.font(size: 13, weight: .bold))
+            .font(theme.font(size: fontSize, weight: .bold))
             .multilineTextAlignment(.center)
             .foregroundStyle(theme.phaseLabelColor)
             .shadow(color: theme.backgroundColor, radius: 4)
@@ -105,18 +126,20 @@ struct ChartView: View {
     }
 
     @ViewBuilder
-    private func axisLabels(in size: CGSize) -> some View {
+    private func axisLabels(in size: CGSize, padding: CGFloat) -> some View {
+        let axisSize = axisFontSize(for: size)
+
         Text("EXPERIENCE / KNOWLEDGE -->")
-            .font(theme.font(size: 11, weight: .bold))
+            .font(theme.font(size: axisSize, weight: .bold))
             .foregroundStyle(theme.axisLabelColor)
-            .position(x: size.width / 2, y: size.height - 12)
+            .position(x: size.width / 2, y: size.height - 10)
 
         Text("CONFIDENCE -->")
-            .font(theme.font(size: 11, weight: .bold))
+            .font(theme.font(size: axisSize, weight: .bold))
             .foregroundStyle(theme.axisLabelColor)
             .rotationEffect(.degrees(-90))
             .fixedSize()
-            .position(x: 16, y: size.height / 2)
+            .position(x: 12, y: size.height / 2)
     }
 }
 

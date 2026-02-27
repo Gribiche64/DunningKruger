@@ -14,16 +14,17 @@ struct ContentView: View {
 
             VStack(spacing: 10) {
                 // Title + Theme picker row
-                HStack {
-                    Spacer()
-
+                HStack(spacing: 8) {
                     Text(theme.titleText)
                         .font(theme.font(size: 16, weight: .heavy))
                         .foregroundStyle(theme.titleColor)
                         .shadow(color: theme.titleColor.opacity(0.8), radius: theme.tagGlowRadius > 0 ? 6 : 0)
                         .shadow(color: theme.titleColor.opacity(0.4), radius: theme.tagGlowRadius > 0 ? 12 : 0)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                        .layoutPriority(1)
 
-                    Spacer()
+                    Spacer(minLength: 4)
 
                     // Theme picker
                     Menu {
@@ -52,11 +53,13 @@ struct ContentView: View {
                         Text(theme.bracketButtons
                              ? "[\(themeManager.selectedThemeID.emoji) SKIN \u{25BE}]"
                              : "\(themeManager.selectedThemeID.emoji) Skin \u{25BE}")
-                            .font(theme.font(size: 16, weight: .heavy))
+                            .font(theme.font(size: 14, weight: .heavy))
                             .foregroundColor(theme.titleColor)
                             .shadow(color: theme.titleColor.opacity(0.7), radius: theme.tagGlowRadius > 0 ? 6 : 0)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
+                            .lineLimit(1)
+                            .fixedSize()
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
                             .background(theme.chipBgColor)
                             .overlay(
                                 Group {
