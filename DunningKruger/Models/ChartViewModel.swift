@@ -54,45 +54,46 @@ class ChartViewModel: ObservableObject {
     // MARK: - Zone Detection & Toast
 
     static func zoneName(forX x: CGFloat) -> String {
-        if x < 0.25 { return "Mt. Stupid" }
+        if x < 0.22 { return "Mt. Stupid" }
         if x < 0.48 { return "the Valley of Despair" }
-        if x < 0.75 { return "the Slope of Enlightenment" }
+        if x < 0.70 { return "the Slope of Enlightenment" }
         return "the Plateau of Sustainability"
     }
 
-    /// Position-aware message grounded in the DK curve place names.
+    /// Position-aware message aligned to the actual curve geometry.
+    /// Peak of Mt. Stupid = x 0.15, Valley bottom = x 0.40, Plateau starts = x 0.70.
     private static func toastText(name: String, x: CGFloat) -> String {
         switch x {
-        // ── Mt. Stupid ──
-        case ..<0.08:
+        // ── Mt. Stupid (peak at x ≈ 0.15) ──
+        case ..<0.06:
             return "\(name) is at the base of Mt. Stupid"
-        case ..<0.15:
+        case ..<0.12:
             return "\(name) is scaling Mt. Stupid"
-        case ..<0.20:
-            return "\(name) is approaching the peak of Mt. Stupid"
-        case ..<0.25:
+        case ..<0.17:
             return "\(name) is at the peak of Mt. Stupid"
+        case ..<0.22:
+            return "\(name) is coming down from Mt. Stupid"
 
-        // ── Valley of Despair ──
-        case ..<0.30:
+        // ── Valley of Despair (bottom at x ≈ 0.40) ──
+        case ..<0.28:
             return "\(name) is descending into the Valley of Despair"
-        case ..<0.37:
+        case ..<0.35:
             return "\(name) is deep in the Valley of Despair"
-        case ..<0.44:
+        case ..<0.42:
             return "\(name) is at the bottom of the Valley of Despair"
         case ..<0.48:
             return "\(name) is climbing out of the Valley of Despair"
 
-        // ── Slope of Enlightenment ──
+        // ── Slope of Enlightenment (x 0.48 → 0.70) ──
         case ..<0.55:
             return "\(name) has found the Slope of Enlightenment"
-        case ..<0.65:
+        case ..<0.63:
             return "\(name) is halfway up the Slope of Enlightenment"
-        case ..<0.75:
+        case ..<0.70:
             return "\(name) is nearing the top of the Slope of Enlightenment"
 
-        // ── Plateau of Sustainability ──
-        case ..<0.85:
+        // ── Plateau of Sustainability (x 0.70+) ──
+        case ..<0.82:
             return "\(name) has reached the Plateau of Sustainability"
         default:
             return "\(name) is well into the Plateau of Sustainability"
