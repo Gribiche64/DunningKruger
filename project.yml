@@ -4,12 +4,13 @@ options:
   deploymentTarget:
     iOS: "16.0"
     macOS: "13.0"
+    visionOS: "2.0"
   xcodeVersion: "16.2"
 
 targets:
   DunningKruger:
     type: application
-    platform: [iOS, macOS]
+    platform: [iOS, macOS, visionOS]
     sources:
       - DunningKruger
     settings:
@@ -20,11 +21,13 @@ targets:
         SWIFT_VERSION: "5.9"
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: "Kreugerizer-5000"
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIStatusBarStyle: UIStatusBarStyleDefault
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
       configs:
         debug:
-          CODE_SIGN_IDENTITY: "-"
-          CODE_SIGNING_REQUIRED: NO
-          CODE_SIGNING_ALLOWED: NO
+          CODE_SIGN_STYLE: Automatic
+          CODE_SIGN_IDENTITY: "Apple Development"
         release:
           CODE_SIGN_STYLE: Automatic
           CODE_SIGN_IDENTITY: "Apple Development"

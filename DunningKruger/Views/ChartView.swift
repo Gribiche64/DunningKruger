@@ -21,6 +21,11 @@ struct ChartView: View {
         size.width < 400 ? 8 : size.width < 600 ? 10 : 11
     }
 
+    /// Scale factor for name tags — 1.0 at 500pt width, grows on larger screens
+    private func markerScale(for size: CGSize) -> CGFloat {
+        min(max(size.width / 500.0, 0.8), 2.0)
+    }
+
     var body: some View {
         GeometryReader { geometry in
             let size = geometry.size
@@ -86,19 +91,20 @@ struct ChartView: View {
                         index: index,
                         chartSize: size,
                         chartPadding: padding,
-                        theme: theme
+                        theme: theme,
+                        scale: markerScale(for: size)
                     ) { newPosition, aspectRatio in
                         viewModel.updatePosition(for: person.id, to: newPosition, aspectRatio: aspectRatio)
                     }
                     .transition(.scale(scale: 0.3).combined(with: .opacity))
                 }
             }
-            #if os(iOS)
-            .onTapGesture {
-                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-            }
-            #endif
         }
+    }
+
+    /// Phase labels fade to watermarks on compact screens so name tags stay readable
+    private func phaseLabelOpacity(for size: CGSize) -> Double {
+        size.width < 500 ? 0.35 : 0.7
     }
 
     @ViewBuilder
@@ -106,20 +112,21 @@ struct ChartView: View {
         let drawW = size.width - padding * 2
         let drawH = size.height - padding * 2
         let fontSize = phaseFontSize(for: size)
+        let opacity = phaseLabelOpacity(for: size)
 
         ZStack {
-            phaseLabel("MT. STUPID", fontSize: fontSize, x: padding + 0.18 * drawW, y: padding + 0.02 * drawH)
-            phaseLabel("VALLEY OF\nDESPAIR", fontSize: fontSize, x: padding + 0.40 * drawW, y: padding + 0.97 * drawH)
-            phaseLabel("SLOPE OF\nENLIGHTENMENT", fontSize: fontSize, x: padding + 0.62 * drawW, y: padding + 0.50 * drawH)
-            phaseLabel("PLATEAU OF\nSUSTAINABILITY", fontSize: fontSize, x: padding + 0.88 * drawW, y: padding + 0.10 * drawH)
+            phaseLabel("MT. STUPID", fontSize: fontSize, opacity: opacity, x: padding + 0.18 * drawW, y: padding + 0.02 * drawH)
+            phaseLabel("VALLEY OF\nDESPAIR", fontSize: fontSize, opacity: opacity, x: padding + 0.40 * drawW, y: padding + 0.97 * drawH)
+            phaseLabel("SLOPE OF\nENLIGHTENMENT", fontSize: fontSize, opacity: opacity, x: padding + 0.62 * drawW, y: padding + 0.50 * drawH)
+            phaseLabel("PLATEAU OF\nSUSTAINABILITY", fontSize: fontSize, opacity: opacity, x: padding + 0.88 * drawW, y: padding + 0.10 * drawH)
         }
     }
 
-    private func phaseLabel(_ text: String, fontSize: CGFloat, x: CGFloat, y: CGFloat) -> some View {
+    private func phaseLabel(_ text: String, fontSize: CGFloat, opacity: Double, x: CGFloat, y: CGFloat) -> some View {
         Text(text)
             .font(theme.font(size: fontSize, weight: .bold))
             .multilineTextAlignment(.center)
-            .foregroundStyle(theme.phaseLabelColor)
+            .foregroundStyle(theme.phaseLabelColor.opacity(opacity))
             .shadow(color: theme.backgroundColor, radius: 4)
             .shadow(color: theme.backgroundColor, radius: 8)
             .position(x: x, y: y)

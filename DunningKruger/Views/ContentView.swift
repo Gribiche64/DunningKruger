@@ -4,6 +4,7 @@ struct ContentView: View {
     @StateObject private var viewModel = ChartViewModel()
     @EnvironmentObject var themeManager: ThemeManager
     @State private var newName = ""
+    @FocusState private var isInputFocused: Bool
 
     private var theme: ChartTheme { themeManager.theme }
 
@@ -12,7 +13,7 @@ struct ContentView: View {
             // Background
             theme.backgroundColor.ignoresSafeArea()
 
-            VStack(spacing: 10) {
+            VStack(spacing: 6) {
                 // Title + Theme picker row
                 HStack(spacing: 8) {
                     Text(theme.titleText)
@@ -74,7 +75,7 @@ struct ContentView: View {
                     .tint(theme.titleColor)
                 }
                 .padding(.horizontal)
-                .padding(.top, 10)
+                .padding(.top, 2)
 
                 // Input row
                 HStack(spacing: 6) {
@@ -82,10 +83,13 @@ struct ContentView: View {
                         .font(theme.font(size: 16, weight: .bold))
                         .foregroundStyle(theme.curveColor)
 
-                    TextField("ENTER NAME", text: $newName)
+                    TextField("", text: $newName,
+                             prompt: Text("ENTER NAME")
+                                .foregroundColor(theme.axisLabelColor.opacity(0.6)))
                         .textFieldStyle(.plain)
                         .font(theme.font(size: 16, weight: .semibold))
                         .foregroundStyle(theme.titleColor)
+                        .focused($isInputFocused)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 6)
                         .background(theme.inputBgColor)
@@ -98,8 +102,10 @@ struct ContentView: View {
                                 }
                             }
                         )
-                        #if os(iOS)
+                        #if os(iOS) || os(visionOS)
                         .autocorrectionDisabled()
+                        .textContentType(.none)
+                        .keyboardType(.alphabet)
                         .textInputAutocapitalization(.words)
                         #endif
                         .onSubmit { addPerson() }
@@ -131,10 +137,13 @@ struct ContentView: View {
                 }
                 .padding(.horizontal)
 
-                // Chart
+                // Chart — fixed aspect ratio so the curve shape is consistent across devices
                 ChartView(viewModel: viewModel)
+                    .aspectRatio(4.0/3.0, contentMode: .fit)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .padding(.horizontal, 8)
+                    .contentShape(Rectangle())
+                    .onTapGesture { isInputFocused = false }   // dismiss keyboard on chart tap
+                    .padding(.horizontal, 4)
                     .overlay(alignment: .bottom) {
                         if let toast = viewModel.toastMessage {
                             Text(toast)
@@ -218,9 +227,12 @@ struct ContentView: View {
                 }
                 .frame(height: 32)
                 .padding(.horizontal)
-                .padding(.bottom, 8)
+                .padding(.bottom, 4)
             }
         }
+        #if os(iOS) || os(visionOS)
+        .ignoresSafeArea(.keyboard)      // don't let keyboard squish the chart
+        #endif
         #if os(macOS)
         .frame(minWidth: 700, minHeight: 500)
         #endif
@@ -231,6 +243,7 @@ struct ContentView: View {
             viewModel.addPerson(named: newName)
         }
         newName = ""
+        isInputFocused = false   // dismiss keyboard immediately
     }
 }
 
@@ -378,13 +391,18 @@ struct ShareButton: View {
 
     @MainActor
     private func shareChart() {
+        // Dismiss keyboard first so share sheet has full screen
+        #if os(iOS) || os(visionOS)
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        #endif
+
         let chartView = StaticChartView(people: viewModel.people, theme: theme)
             .frame(width: 800, height: 500)
 
         let renderer = ImageRenderer(content: chartView)
         renderer.scale = 2.0
 
-        #if os(iOS)
+        #if os(iOS) || os(visionOS)
         guard let uiImage = renderer.uiImage else { return }
 
         guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
@@ -399,7 +417,7 @@ struct ShareButton: View {
 
         rootVC.present(activityVC, animated: true)
 
-        #else
+        #elseif os(macOS)
         guard let cgImage = renderer.cgImage else { return }
         let nsImage = NSImage(cgImage: cgImage, size: NSSize(width: cgImage.width / 2, height: cgImage.height / 2))
 

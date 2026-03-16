@@ -188,21 +188,19 @@ struct AnyShape: Shape, @unchecked Sendable {
 // MARK: - Tag Width Estimation
 
 /// Estimate the pixel half-width of a name tag so we can clamp it within chart bounds.
-private func estimatedTagHalfWidth(name: String, theme: ChartTheme) -> CGFloat {
+private func estimatedTagHalfWidth(name: String, theme: ChartTheme, scale: CGFloat = 1.0) -> CGFloat {
     let maxChars = 12
     let displayLen = min(name.count, maxChars)
+    let base: CGFloat
     if theme.usePixelFont {
         let pixelSize = theme.pixelFontSize
-        // PixelFont.render: cols = charCount * (3 + 1) - 1  (3px char + 1px gap)
-        // Tag frame width = cols * pixelSize + 8 (padding)
-        // Then add generous margin for border stroke + glow shadow bleed
         let cols = CGFloat(displayLen) * 4.0
         let frameW = cols * pixelSize + 8.0
-        return frameW / 2.0 + 12.0
+        base = frameW / 2.0 + 12.0
     } else {
-        // System font at size 10: ~6.5px per char + 12px horizontal padding + border/shadow
-        return CGFloat(displayLen) * 6.5 / 2.0 + 14.0
+        base = CGFloat(displayLen) * 6.5 / 2.0 + 14.0
     }
+    return base * scale
 }
 
 // MARK: - Easter Egg Detection
@@ -221,6 +219,7 @@ struct PersonMarkerView: View {
     let chartSize: CGSize
     let chartPadding: CGFloat
     let theme: ChartTheme
+    var scale: CGFloat = 1.0
     let onPositionChange: (CGPoint, CGFloat) -> Void  // (normalized position, aspect ratio)
 
     @State private var dragOffset: CGSize = .zero
@@ -246,7 +245,7 @@ struct PersonMarkerView: View {
     /// Pixel position of the name tag (offset from curve), clamped to stay inside chart
     private var tagPosition: CGPoint {
         let rawX = snapPosition.x
-        let halfW = estimatedTagHalfWidth(name: person.name, theme: theme)
+        let halfW = estimatedTagHalfWidth(name: person.name, theme: theme, scale: scale)
         let minX = chartPadding + halfW
         let maxX = chartSize.width - chartPadding - halfW
         let clampedX = max(minX, min(rawX, maxX))
@@ -298,6 +297,7 @@ struct PersonMarkerView: View {
             Circle()
                 .fill(markerColor)
                 .frame(width: 10, height: 10)
+                .scaleEffect(scale)
                 .shadow(color: markerColor.opacity(theme.tagGlowRadius > 0 ? 0.7 : 0.4), radius: 4)
                 .position(dotDisplayPosition)
 
@@ -307,15 +307,17 @@ struct PersonMarkerView: View {
                 color: markerColor,
                 theme: theme
             )
+            .scaleEffect(scale)
             .position(nameTagPosition)
 
             // Easter egg crown for Dunning/Kruger names
             if isEasterEgg {
                 Text("\u{1F451}")
                     .font(.system(size: 14))
+                    .scaleEffect(scale)
                     .position(
                         x: nameTagPosition.x,
-                        y: nameTagPosition.y - 16
+                        y: nameTagPosition.y - 16 * scale
                     )
             }
         }
@@ -356,6 +358,7 @@ struct StaticMarkerView: View {
     let chartPadding: CGFloat
     let drawW: CGFloat
     let drawH: CGFloat
+    var scale: CGFloat = 1.0
 
     private var markerColor: Color {
         person.color(in: theme)
@@ -372,7 +375,7 @@ struct StaticMarkerView: View {
 
     private var tagPos: CGPoint {
         let rawX = snapPos.x
-        let halfW = estimatedTagHalfWidth(name: person.name, theme: theme)
+        let halfW = estimatedTagHalfWidth(name: person.name, theme: theme, scale: scale)
         let minX = chartPadding + halfW
         let maxX = chartPadding + drawW - halfW
         let clampedX = max(minX, min(rawX, maxX))
@@ -397,6 +400,7 @@ struct StaticMarkerView: View {
             Circle()
                 .fill(markerColor)
                 .frame(width: 10, height: 10)
+                .scaleEffect(scale)
                 .position(snapPos)
 
             // Name tag
@@ -405,13 +409,15 @@ struct StaticMarkerView: View {
                 color: markerColor,
                 theme: theme
             )
+            .scaleEffect(scale)
             .position(tagPos)
 
             // Easter egg crown
             if isEasterEgg {
                 Text("\u{1F451}")
                     .font(.system(size: 14))
-                    .position(x: tagPos.x, y: tagPos.y - 16)
+                    .scaleEffect(scale)
+                    .position(x: tagPos.x, y: tagPos.y - 16 * scale)
             }
         }
     }
